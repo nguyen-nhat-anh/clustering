@@ -116,7 +116,7 @@ def _update_centroids(data, labels, old_centroids):
         input data, array with shape (n_samples, n_features)
     :param: labels:numpy.array \n
         array of labels corresponding to input data, shape (n_samples,)
-    :param: old_centroids:labels:numpy.array \n
+    :param: old_centroids:numpy.array \n
         array of old centroids with shape (n_clusters, n_features)
     :return:updated_centroids:numpy.array \n
         array of updated centroids with shape (n_clusters, n_features)

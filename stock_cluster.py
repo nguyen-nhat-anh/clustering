@@ -1,15 +1,21 @@
 import argparse
 import numpy as np
 import data_processing
+import clustering_algorithm
+import cluster_validation
 from sklearn import cluster
 from sklearn.metrics.pairwise import cosine_similarity
-from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy.spatial.distance import pdist
 from matplotlib import pyplot as plt
 
 parser = argparse.ArgumentParser(description='VN30 Stocks clustering program')
-parser.add_argument('-d', '--date_range', help='Date range (months): one,quarter,half', required=True, default='one')
-parser.add_argument('-a', '--algorithm', help='Cluster algorithm: hierarchical, affinity_propagation',required=True)
+parser.add_argument('-d', '--date_range', choices=['one', 'quarter', 'half'],
+                    help='Date range (months): one,quarter,half', required=False, default='one')
+parser.add_argument('-a', '--algorithm', choices=['hierarchical', 'affinity_propagation', 'mbsas'],
+                    help='Cluster algorithm: hierarchical, affinity_propagation, mbsas',required=True)
+parser.add_argument('-v', '--validation', choices=['none', 'dunn', 'silhouette'],
+                    help='Cluster validation options: none, dunn, silhouette', required=False, default='none')
 args = parser.parse_args()
 
 tickers = ['BID','BMP','BVH','CII','CTD','CTG','DHG','DPM','FPT',
@@ -37,15 +43,36 @@ elif args.date_range == 'half':
 sorted_tickers = np.asarray([x[0] for x in sorted(values_change.items())])
 sorted_values_change = np.asarray([x[1] for x in sorted(values_change.items())])
 
+# clustering process
 if args.algorithm == 'affinity_propagation':
     mean_subtracted = sorted_values_change - np.mean(sorted_values_change,axis=1,keepdims=True)
     estimator = cluster.AffinityPropagation(affinity='precomputed')
     estimator.fit(cosine_similarity(mean_subtracted))
-    for i in range(estimator.labels_.max() + 1):
-        print('Cluster %i: %s' % (i, ', '.join(sorted_tickers[estimator.labels_ == i])))
+    labels = estimator.labels_
 
 if args.algorithm == 'hierarchical':
     dist_matrix = pdist(sorted_values_change,metric='correlation')
     Z = linkage(dist_matrix,method='ward')
+    labels = fcluster(Z, t=1.25, criterion='distance')
+    labels = labels - 1
     dendrogram(Z,labels=sorted_tickers)
+
+if args.algorithm == 'mbsas':
+    labels = clustering_algorithm.modified_bsas(sorted_values_change, threshold=0.9, max_n_clusters=10, refine=True,
+                                                merge_threshold=0.1)
+
+# display result
+n_clusters = labels.max() + 1
+for i in range(n_clusters):
+    print('Cluster %i: %s' % (i, ', '.join(sorted_tickers[labels == i])))
+
+if args.algorithm == 'hierarchical':
     plt.show()
+
+# cluster validation
+if args.validation == "dunn":
+    cluster_validation.compute_dunn_index(sorted_values_change, labels, n_clusters)
+
+if args.validation == "silhouette":
+    cluster_validation.compute_silhouette(sorted_values_change, labels, n_clusters, mode='average')
+    cluster_validation.plot_silhouette(sorted_values_change, labels, n_clusters)
