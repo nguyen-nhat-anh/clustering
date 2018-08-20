@@ -9,13 +9,14 @@ from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy.spatial.distance import pdist
 from matplotlib import pyplot as plt
 
-parser = argparse.ArgumentParser(description='VN30 Stocks clustering program')
+parser = argparse.ArgumentParser(description='VN30 Stocks clustering program',
+                                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-d', '--date_range', choices=['one', 'quarter', 'half'],
-                    help='Date range (months): one,quarter,half', required=False, default='one')
+                    help='Date range (months): one,quarter,half\nDefault: one', required=False, default='one')
 parser.add_argument('-a', '--algorithm', choices=['hierarchical', 'affinity_propagation', 'mbsas'],
                     help='Cluster algorithm: hierarchical, affinity_propagation, mbsas',required=True)
 parser.add_argument('-v', '--validation', choices=['none', 'dunn', 'silhouette'],
-                    help='Cluster validation options: none, dunn, silhouette', required=False, default='none')
+                    help='Cluster validation options: none, dunn, silhouette\nDefault: none', required=False, default='none')
 args = parser.parse_args()
 
 tickers = ['BID','BMP','BVH','CII','CTD','CTG','DHG','DPM','FPT',
